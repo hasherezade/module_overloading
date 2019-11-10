@@ -1,7 +1,7 @@
 cmake_minimum_required ( VERSION 2.8 )
 
 # replace "peconv_project" by your own project name:
-project ( peconv_project )
+project ( hollowed_dll_mapping )
 
 # libs
 # modules:
