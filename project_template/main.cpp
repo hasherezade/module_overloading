@@ -93,7 +93,7 @@ bool is_compatibile(BYTE *implant_dll)
 {
 	bool is_payload64 = peconv::is64bit(implant_dll);
 #ifdef _WIN64
-	if (!is_payload64)) {
+	if (!is_payload64) {
 	std::cerr << "For 64 bit loader you MUST use a 64 bit payload!\n";
 	return false;
 	}
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 {
 	if (argc < 2) {
 		std::cout << 
-			"\/***************************************************************************\n"
+			"/***************************************************************************\n"
 			"Hollow DLL mapping (PoC)\nmore info: https://github.com/hasherezade/hollowed_dll_mapping\n"
 			"Args: <payload_dll> [target_dll]\n"
 			"\t<payload_dll> - the DLL that will be impanted\n"
