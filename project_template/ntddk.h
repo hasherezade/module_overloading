@@ -3644,39 +3644,18 @@ extern "C" {
 			IN POBJECT_ATTRIBUTES ObjectAttributes
 		);
 
-
-	NTSYSAPI
-		NTSTATUS
-		NTAPI
-		NtMapViewOfSection(
-			IN HANDLE SectionHandle,
-			IN HANDLE ProcessHandle,
-			IN OUT PVOID *BaseAddress,
-			IN ULONG ZeroBits,
-			IN ULONG CommitSize,
-			IN OUT PLARGE_INTEGER SectionOffset OPTIONAL,
-			IN OUT PULONG ViewSize,
-			IN SECTION_INHERIT InheritDisposition,
-			IN ULONG AllocationType,
-			IN ULONG Protect
-		);
-
-
-	NTSYSAPI
-		NTSTATUS
-		NTAPI
-		ZwMapViewOfSection(
-			IN HANDLE SectionHandle,
-			IN HANDLE ProcessHandle,
-			IN OUT PVOID *BaseAddress,
-			IN ULONG ZeroBits,
-			IN ULONG CommitSize,
-			IN OUT PLARGE_INTEGER SectionOffset OPTIONAL,
-			IN OUT PULONG ViewSize,
-			IN SECTION_INHERIT InheritDisposition,
-			IN ULONG AllocationType,
-			IN ULONG Protect
-		);
+	NTSYSAPI NTSTATUS NtMapViewOfSection(
+		HANDLE          SectionHandle,
+		HANDLE          ProcessHandle,
+		PVOID           *BaseAddress,
+		ULONG_PTR       ZeroBits,
+		SIZE_T          CommitSize,
+		PLARGE_INTEGER  SectionOffset,
+		PSIZE_T         ViewSize,
+		SECTION_INHERIT InheritDisposition,
+		ULONG           AllocationType,
+		ULONG           Win32Protect
+	);
 
 
 	NTSYSAPI

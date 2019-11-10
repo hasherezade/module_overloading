@@ -46,10 +46,10 @@ PVOID map_dll_image(const char* dll_name)
 
 	DWORD protect = PAGE_EXECUTE_READWRITE;
 	PVOID sectionBaseAddress = NULL;
-	ULONG viewSize = 0;
+	SIZE_T viewSize = 0;
 	SECTION_INHERIT inheritDisposition = ViewShare; //VIEW_SHARE
 	if ((status = NtMapViewOfSection(hSection,
-		GetCurrentProcess(),
+		NtCurrentProcess(),
 		&sectionBaseAddress,
 		NULL,
 		NULL,
@@ -60,10 +60,10 @@ PVOID map_dll_image(const char* dll_name)
 		protect)
 		) != STATUS_SUCCESS)
 	{
-		printf("[ERROR] NtMapViewOfSection failed, status : %x\n", status);
+		std::wcout << "[ERROR] NtMapViewOfSection failed, status : " << std::hex << status << "\n";
 	}
 	else {
-		printf("Section BaseAddress: %p\n", sectionBaseAddress);
+		std::wcout << "Section BaseAddress: " << std::hex << sectionBaseAddress << "\n";
 		is_ok = true;
 	}
 	return sectionBaseAddress;
