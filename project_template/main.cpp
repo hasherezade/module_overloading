@@ -84,14 +84,14 @@ bool overwrite_mapping(PVOID mapped, BYTE* implant_dll, size_t implant_size)
 		is_ok = true;
 		std::cout << "Written: " << std::hex << number_written << "\n";
 	}*/
-	if (!VirtualProtect((LPVOID)mapped, implant_size, PAGE_EXECUTE_READWRITE, &oldProtect)) return false;
+	if (!VirtualProtect((LPVOID)mapped, implant_size, PAGE_EXECUTE_WRITECOPY, &oldProtect)) return false;
 	return is_ok;
 }
 
 int main(int argc, char *argv[])
 {
 	/*if (argc < 3) {
-		std::cerr << "Supply the files!\n<dll_to_map> <dll_to_implant>" << std::endl;
+		std::cerr << "Supply the files!\n<target_dll> <payload_dll>" << std::endl;
 		system("pause");
 		return -1;
 	}*/
