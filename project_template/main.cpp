@@ -97,13 +97,19 @@ bool overwrite_mapping(PVOID mapped, BYTE* implant_dll, size_t implant_size)
 
 	//cleanup previous module:
 	size_t prev_size = peconv::get_image_size((BYTE*)mapped);
+
 	if (prev_size) {
 		if (!VirtualProtect((LPVOID)mapped, prev_size, PAGE_READWRITE, &oldProtect)) return false;
 		memset(mapped, 0, prev_size);
 		if (!VirtualProtect((LPVOID)mapped, prev_size, PAGE_READONLY, &oldProtect)) return false;
 	}
 
-	if (!VirtualProtect((LPVOID)mapped, implant_size, PAGE_READWRITE, &oldProtect)) return false;
+	if (!VirtualProtect((LPVOID)mapped, implant_size, PAGE_READWRITE, &oldProtect)) {
+		if (implant_size > prev_size) {
+			std::cout << "[-] The implant is too big for the target!\n";
+		}
+		return false;
+	}
 	memcpy(mapped, implant_dll, implant_size);
 	is_ok = true;
 
@@ -185,9 +191,11 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	std::cout << "[*] Trying to overwrite the mapped DLL with the implant!\n";
-	if (overwrite_mapping(mapped, implant_dll, v_size)) {
-		std::cout << "[+] Copied!\n";
+	if (!overwrite_mapping(mapped, implant_dll, v_size)) {
+		system("pause");
+		return -1;
 	}
+	std::cout << "[+] Copied!\n";
 	DWORD ep_rva = peconv::get_entry_point_rva(implant_dll);
 	bool is_dll = peconv::is_module_dll(implant_dll);
 
