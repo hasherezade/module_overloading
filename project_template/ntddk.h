@@ -3644,6 +3644,7 @@ extern "C" {
 			IN POBJECT_ATTRIBUTES ObjectAttributes
 		);
 
+#ifdef _WIN64
 	NTSYSAPI NTSTATUS NtMapViewOfSection(
 		HANDLE          SectionHandle,
 		HANDLE          ProcessHandle,
@@ -3656,8 +3657,23 @@ extern "C" {
 		ULONG           AllocationType,
 		ULONG           Win32Protect
 	);
-
-
+#else
+	NTSYSAPI
+		NTSTATUS
+		NTAPI
+		NtMapViewOfSection(
+			IN HANDLE SectionHandle,
+			IN HANDLE ProcessHandle,
+			IN OUT PVOID *BaseAddress,
+			IN ULONG ZeroBits,
+			IN ULONG CommitSize,
+			IN OUT PLARGE_INTEGER SectionOffset OPTIONAL,
+			IN OUT PULONG ViewSize,
+			IN SECTION_INHERIT InheritDisposition,
+			IN ULONG AllocationType,
+			IN ULONG Protect
+		);
+#endif
 	NTSYSAPI
 		NTSTATUS
 		NTAPI
