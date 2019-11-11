@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
 	if (argc < 2) {
 		std::cout << 
 			"/***************************************************************************\n"
-			"Hollow DLL mapping (PoC)\nmore info: https://github.com/hasherezade/hollowed_dll_mapping\n"
+			"Module Overloading (PoC)\nmore info: https://github.com/hasherezade/module_overloading\n"
 			"Args: <payload_dll> [target_dll]\n"
 			"\t<payload_dll> - the DLL that will be impanted\n"
 			"\t[target_dll] - the DLL that will be replaced (default: tapi32.dll)\n"
