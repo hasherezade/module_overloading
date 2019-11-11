@@ -13,3 +13,5 @@ Use recursive clone to get the repo together with all the submodules:
 <pre>
 git clone --recursive https://github.com/hasherezade/module_overloading.git
 </pre>
+
+<img src="./docs/img/demo.png" alt="demo view" >
