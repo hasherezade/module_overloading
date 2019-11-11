@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
 	std::cout << "target_dll: " << dll_name << "\n";
 	std::cout << "implant_dll: " << implant_name << "\n";
 
-	PVOID mapped = map_dll_image(target_dll);
+	PVOID mapped = map_dll_image(dll_name);
 	if (!mapped) {
 		system("pause");
 		return -1;
