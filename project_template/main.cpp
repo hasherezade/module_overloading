@@ -69,6 +69,56 @@ PVOID map_dll_image(const char* dll_name)
 	return sectionBaseAddress;
 }
 
+DWORD translate_protect(DWORD sec_charact)
+{
+	if ((sec_charact & IMAGE_SCN_MEM_EXECUTE)
+		&& (sec_charact & IMAGE_SCN_MEM_READ)
+		&& (sec_charact & IMAGE_SCN_MEM_WRITE))
+	{
+		return PAGE_EXECUTE_READWRITE;
+	}
+	if ((sec_charact & IMAGE_SCN_MEM_EXECUTE)
+		&& (sec_charact & IMAGE_SCN_MEM_READ))
+	{
+		return PAGE_EXECUTE_READ;
+	}
+	if (sec_charact & IMAGE_SCN_MEM_EXECUTE)
+	{
+		return PAGE_EXECUTE_READ;
+	}
+
+	if ((sec_charact & IMAGE_SCN_MEM_READ)
+		&& (sec_charact & IMAGE_SCN_MEM_WRITE))
+	{
+		return PAGE_READWRITE;
+	}
+	if (sec_charact &  IMAGE_SCN_MEM_READ) {
+		return PAGE_READONLY;
+	}
+
+	return PAGE_READWRITE;
+}
+
+bool set_sections_access(PVOID mapped, BYTE* implant_dll, size_t implant_size)
+{
+	DWORD oldProtect = 0;
+	// protect PE header
+	if (!VirtualProtect((LPVOID)mapped, PAGE_SIZE, PAGE_READONLY, &oldProtect)) return false;
+
+	bool is_ok = true;
+	//protect sections:
+	size_t count = peconv::get_sections_count(implant_dll, implant_size);
+	for (size_t i = 0; i < count; i++) {
+		IMAGE_SECTION_HEADER *next_sec = peconv::get_section_hdr(implant_dll, implant_size, i);
+		if (!next_sec) break;
+		DWORD sec_protect = translate_protect(next_sec->Characteristics);
+		DWORD sec_offset = next_sec->VirtualAddress;
+		DWORD sec_size = next_sec->Misc.VirtualSize;
+		if (!VirtualProtect((LPVOID)((ULONG_PTR)mapped + sec_offset), sec_size, sec_protect, &oldProtect)) is_ok = false;
+	}
+	return is_ok;
+}
+
 bool overwrite_mapping(PVOID mapped, BYTE* implant_dll, size_t implant_size)
 {
 	HANDLE hProcess = GetCurrentProcess();
@@ -85,7 +135,10 @@ bool overwrite_mapping(PVOID mapped, BYTE* implant_dll, size_t implant_size)
 		is_ok = true;
 		std::cout << "Written: " << std::hex << number_written << "\n";
 	}*/
-	if (!VirtualProtect((LPVOID)mapped, implant_size, PAGE_EXECUTE_WRITECOPY, &oldProtect)) return false;
+	// set access:
+	if (!set_sections_access(mapped, implant_dll, implant_size)) {
+		is_ok = false;
+	}
 	return is_ok;
 }
 
