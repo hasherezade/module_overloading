@@ -112,6 +112,23 @@ bool overwrite_mapping(PVOID mapped, BYTE* implant_dll, size_t implant_size)
 	return is_ok;
 }
 
+void run_implant(PVOID mapped, DWORD ep_rva, bool is_dll)
+{
+	ULONG_PTR implant_ep = (ULONG_PTR)mapped + ep_rva;
+
+	std::cout << "[*] Executing Implant's Entry Point: " << std::hex << implant_ep << "\n";
+	if (is_dll) {
+		//run the implant as a DLL:
+		BOOL(*dll_main)(HINSTANCE, DWORD, LPVOID) = (BOOL(*)(HINSTANCE, DWORD, LPVOID))(implant_ep);
+		dll_main((HINSTANCE)mapped, DLL_PROCESS_ATTACH, 0);
+	}
+	else {
+		//run the implant as EXE:
+		BOOL(*exe_main)(void) = (BOOL(*)(void))(implant_ep);
+		exe_main();
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	if (argc < 2) {
@@ -169,24 +186,12 @@ int main(int argc, char *argv[])
 	if (overwrite_mapping(mapped, implant_dll, v_size)) {
 		std::cout << "[+] Copied!\n";
 	}
-	DWORD ep = peconv::get_entry_point_rva(implant_dll);
+	DWORD ep_rva = peconv::get_entry_point_rva(implant_dll);
 	bool is_dll = peconv::is_module_dll(implant_dll);
 
 	peconv::free_pe_buffer(implant_dll); implant_dll = NULL;
 
-	ULONG_PTR implant_ep = (ULONG_PTR)mapped + ep;
-
-	std::cout << "[*] Executing Implant's Entry Point: " << std::hex << implant_ep << "\n";
-	if (is_dll) {
-		//run the implant as a DLL:
-		BOOL(*dll_main)(HINSTANCE, DWORD, LPVOID) = (BOOL(*)(HINSTANCE, DWORD, LPVOID))(implant_ep);
-		dll_main((HINSTANCE)mapped, DLL_PROCESS_ATTACH, 0);
-	}
-	else {
-		//run the implant as EXE:
-		BOOL(*exe_main)(void) = (BOOL(*)(void))(implant_ep);
-		exe_main();
-	}
+	run_implant(mapped, ep_rva, is_dll);
 
 	system("pause");
 	return 0;
