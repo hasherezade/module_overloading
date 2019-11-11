@@ -2,8 +2,8 @@
 #include <iostream>
 
 #include <peconv.h>
-
 #include "ntddk.h"
+#include "util.h"
 
 PVOID map_dll_image(const char* dll_name)
 {
@@ -69,36 +69,6 @@ PVOID map_dll_image(const char* dll_name)
 	return sectionBaseAddress;
 }
 
-DWORD translate_protect(DWORD sec_charact)
-{
-	if ((sec_charact & IMAGE_SCN_MEM_EXECUTE)
-		&& (sec_charact & IMAGE_SCN_MEM_READ)
-		&& (sec_charact & IMAGE_SCN_MEM_WRITE))
-	{
-		return PAGE_EXECUTE_READWRITE;
-	}
-	if ((sec_charact & IMAGE_SCN_MEM_EXECUTE)
-		&& (sec_charact & IMAGE_SCN_MEM_READ))
-	{
-		return PAGE_EXECUTE_READ;
-	}
-	if (sec_charact & IMAGE_SCN_MEM_EXECUTE)
-	{
-		return PAGE_EXECUTE_READ;
-	}
-
-	if ((sec_charact & IMAGE_SCN_MEM_READ)
-		&& (sec_charact & IMAGE_SCN_MEM_WRITE))
-	{
-		return PAGE_READWRITE;
-	}
-	if (sec_charact &  IMAGE_SCN_MEM_READ) {
-		return PAGE_READONLY;
-	}
-
-	return PAGE_READWRITE;
-}
-
 bool set_sections_access(PVOID mapped, BYTE* implant_dll, size_t implant_size)
 {
 	DWORD oldProtect = 0;
@@ -140,23 +110,6 @@ bool overwrite_mapping(PVOID mapped, BYTE* implant_dll, size_t implant_size)
 		is_ok = false;
 	}
 	return is_ok;
-}
-
-bool is_compatibile(BYTE *implant_dll)
-{
-	bool is_payload64 = peconv::is64bit(implant_dll);
-#ifdef _WIN64
-	if (!is_payload64) {
-	std::cerr << "For 64 bit loader you MUST use a 64 bit payload!\n";
-	return false;
-	}
-#else
-	if (is_payload64) {
-		std::cerr << "For 32 bit loader you MUST use a 32 bit payload!\n";
-		return false;
-	}
-#endif
-	return true;
 }
 
 int main(int argc, char *argv[])

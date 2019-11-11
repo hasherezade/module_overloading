@@ -11,12 +11,12 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 include_directories ( ${PECONV_DIR}/include )
 
 set (srcs
-#put your sources here
+	util.cpp
 )
 
 # general headers - they will be used for both EXE and DLL:
 set (hdrs
-#put your headers here
+	util.h
 )
 
 set (rsrc
