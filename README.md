@@ -7,6 +7,10 @@ https://twitter.com/TheRealWover/status/1193284444687392768?s=20
 
 Using: [libpeconv](https://github.com/hasherezade/libpeconv).
 
+Demo:
+-
+<img src="./docs/img/demo.png" alt="demo view" >
+
 Clone:
 -
 Use recursive clone to get the repo together with all the submodules:
@@ -14,4 +18,3 @@ Use recursive clone to get the repo together with all the submodules:
 git clone --recursive https://github.com/hasherezade/module_overloading.git
 </pre>
 
-<img src="./docs/img/demo.png" alt="demo view" >
