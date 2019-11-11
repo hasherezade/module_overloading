@@ -11,5 +11,5 @@ Clone:
 -
 Use recursive clone to get the repo together with all the submodules:
 <pre>
-git clone --recursive https://github.com/hasherezade/hollowed_dll_mapping.git
+git clone --recursive https://github.com/hasherezade/module_overloading.git
 </pre>
