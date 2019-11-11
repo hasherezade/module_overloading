@@ -93,18 +93,20 @@ bool overwrite_mapping(PVOID mapped, BYTE* implant_dll, size_t implant_size)
 {
 	HANDLE hProcess = GetCurrentProcess();
 	bool is_ok = false;
-
 	DWORD oldProtect = 0;
-	if (!VirtualProtect((LPVOID)mapped, implant_size, PAGE_READWRITE, &oldProtect)) return false;
 
+	//cleanup previous module:
+	size_t prev_size = peconv::get_image_size((BYTE*)mapped);
+	if (prev_size) {
+		if (!VirtualProtect((LPVOID)mapped, prev_size, PAGE_READWRITE, &oldProtect)) return false;
+		memset(mapped, 0, prev_size);
+		if (!VirtualProtect((LPVOID)mapped, prev_size, PAGE_READONLY, &oldProtect)) return false;
+	}
+
+	if (!VirtualProtect((LPVOID)mapped, implant_size, PAGE_READWRITE, &oldProtect)) return false;
 	memcpy(mapped, implant_dll, implant_size);
 	is_ok = true;
-	/*
-	SIZE_T number_written = 0;
-	if (WriteProcessMemory(hProcess, (LPVOID)mapped, implant_dll, implant_size, &number_written)) {
-		is_ok = true;
-		std::cout << "Written: " << std::hex << number_written << "\n";
-	}*/
+
 	// set access:
 	if (!set_sections_access(mapped, implant_dll, implant_size)) {
 		is_ok = false;
