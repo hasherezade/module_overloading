@@ -5,6 +5,9 @@
 #include "ntddk.h"
 #include "util.h"
 
+//enable it if you want to do a classic DLL hollowing instead:
+//#define CLASSIC_HOLLOWING
+
 PVOID map_dll_image(const char* dll_name)
 {
 	HANDLE hFile = CreateFileA(dll_name,
@@ -67,6 +70,17 @@ PVOID map_dll_image(const char* dll_name)
 		is_ok = true;
 	}
 	return sectionBaseAddress;
+}
+
+PVOID load_target_dll(const char* dll_name)
+{
+#ifdef CLASSIC_HOLLOWING
+	std::cout << "[*] Loading the DLL...\n";
+	return LoadLibraryA(dll_name);
+#else
+	std::cout << "[*] Mapping the DLL image...\n";
+	return map_dll_image(dll_name);
+#endif
 }
 
 bool set_sections_access(PVOID mapped, BYTE* implant_dll, size_t implant_size)
@@ -165,7 +179,7 @@ int main(int argc, char *argv[])
 	std::cout << "target_dll: " << dll_name << "\n";
 	std::cout << "implant_dll: " << implant_name << "\n";
 
-	PVOID mapped = map_dll_image(dll_name);
+	PVOID mapped = load_target_dll(dll_name);
 	if (!mapped) {
 		system("pause");
 		return -1;
