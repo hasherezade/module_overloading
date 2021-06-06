@@ -7,6 +7,14 @@ https://twitter.com/TheRealWover/status/1193284444687392768?s=20
 
 Using: [libpeconv](https://github.com/hasherezade/libpeconv).
 
+Features:
+-
+
++ Payload mapped as `MEM_IMAGE`, impersonating a legitimate DLL (image linked to a file on the disk)
++ Sections mapped with original access rights (no `RWX`)
++ Not connected to the list of modules (invisible for `Module32First`/`Module32Next`)
++ Only self-injection supported
+
 Demo:
 -
 ![demo_view](/docs/img/demo.png)
