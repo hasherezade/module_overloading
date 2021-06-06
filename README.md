@@ -7,7 +7,7 @@ https://twitter.com/TheRealWover/status/1193284444687392768?s=20
 
 Using: [libpeconv](https://github.com/hasherezade/libpeconv).
 
-Features:
+Characteristics:
 -
 
 + Payload mapped as `MEM_IMAGE`, impersonating a legitimate DLL (image linked to a file on the disk)
