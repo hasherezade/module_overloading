@@ -12,7 +12,8 @@ Characteristics:
 
 + Payload mapped as `MEM_IMAGE`, impersonating a legitimate DLL (image linked to a file on the disk)
 + Sections mapped with original access rights (no `RWX`)
-+ Not connected to the list of modules (invisible for `Module32First`/`Module32Next`)
++ Not connected* to the list of modules (invisible for `Module32First`/`Module32Next`) 
+  +   *may be connected if the 'classic DLL hollowing' was selected*
 + Only self-injection supported
 
 Demo:
