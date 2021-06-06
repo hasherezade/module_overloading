@@ -5,9 +5,6 @@
 #include "ntddk.h"
 #include "util.h"
 
-//enable it if you want to do a classic DLL hollowing instead:
-//#define CLASSIC_HOLLOWING
-
 PVOID map_dll_image(const char* dll_name)
 {
 	HANDLE hFile = CreateFileA(dll_name,
