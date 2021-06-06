@@ -9,12 +9,12 @@ Using: [libpeconv](https://github.com/hasherezade/libpeconv).
 
 Demo:
 -
-<img src="./docs/img/demo.png" alt="demo view" >
+![demo_view](/docs/img/demo.png)
 
 Clone:
 -
 Use recursive clone to get the repo together with all the submodules:
-<pre>
-git clone --recursive https://github.com/hasherezade/module_overloading.git
-</pre>
 
+```console
+git clone --recursive https://github.com/hasherezade/module_overloading.git
+```
