@@ -15,11 +15,13 @@ include_directories ( ${PECONV_DIR}/include )
 
 set (srcs
 	util.cpp
+	map_dll_image.cpp
 )
 
 # general headers - they will be used for both EXE and DLL:
 set (hdrs
 	util.h
+	map_dll_image.h
 )
 
 add_executable ( ${PROJECT_NAME} ${exe_hdrs} ${srcs} ${rsrc} main.cpp )
@@ -29,3 +31,5 @@ target_link_libraries ( ${PROJECT_NAME} ${PECONV_LIB} )
 
 #dependencies:
 add_dependencies( ${PROJECT_NAME} libpeconv )
+
+INSTALL( TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX} COMPONENT ${PROJECT_NAME} )

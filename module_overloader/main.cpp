@@ -2,77 +2,16 @@
 #include <iostream>
 
 #include <peconv.h>
-#include "ntddk.h"
 #include "util.h"
 
-PVOID map_dll_image(const char* dll_name)
-{
-	HANDLE hFile = CreateFileA(dll_name,
-		GENERIC_READ,
-		0,
-		NULL,
-		OPEN_EXISTING,
-		FILE_ATTRIBUTE_NORMAL,
-		NULL
-	);
-	if (!hFile || hFile == INVALID_HANDLE_VALUE) {
-		std::cerr << "Couldn't open the file!" << std::hex << hFile << std::endl;
-		return NULL;
-	}
-	std::cout << "File created, handle: " << std::hex << hFile << std::endl;
-
-	HANDLE hSection = nullptr;
-	NTSTATUS status = NtCreateSection(&hSection,
-		SECTION_ALL_ACCESS,
-		NULL,
-		0,
-		PAGE_READONLY,
-		SEC_IMAGE,
-		hFile
-	);
-	bool is_ok = false;
-	if (status != STATUS_SUCCESS) {
-		std::cerr << "NtCreateSection failed" << std::endl;
-	}
-	else {
-		std::cerr << "NtCreateSection created at:" << std::hex << hSection << std::endl;
-		is_ok = true;
-	}
-
-	CloseHandle(hFile);
-	if (!is_ok) {
-		return NULL;
-	}
-
-	DWORD protect = PAGE_EXECUTE_READWRITE;
-	PVOID sectionBaseAddress = NULL;
-	SIZE_T viewSize = 0;
-	SECTION_INHERIT inheritDisposition = ViewShare; //VIEW_SHARE
-	if ((status = NtMapViewOfSection(hSection,
-		NtCurrentProcess(),
-		&sectionBaseAddress,
-		NULL,
-		NULL,
-		NULL,
-		&viewSize,
-		inheritDisposition,
-		NULL,
-		protect)
-		) != STATUS_SUCCESS)
-	{
-		std::wcout << "[ERROR] NtMapViewOfSection failed, status : " << std::hex << status << "\n";
-	}
-	else {
-		std::wcout << "Section BaseAddress: " << std::hex << sectionBaseAddress << "\n";
-		is_ok = true;
-	}
-	return sectionBaseAddress;
-}
+#ifndef CLASSIC_HOLLOWING
+#include "map_dll_image.h"
+#endif
 
 PVOID load_target_dll(const char* dll_name)
 {
 #ifdef CLASSIC_HOLLOWING
-	std::cout << "[*] Loading the DLL...\n";
+	std::cout << "[*] Loading the DLL (using LoadLibary)...\n";
 	return LoadLibraryA(dll_name);
 #else
 	std::cout << "[*] Mapping the DLL image...\n";
@@ -151,11 +90,16 @@ void run_implant(PVOID mapped, DWORD ep_rva, bool is_dll)
 int main(int argc, char *argv[])
 {
 	if (argc < 2) {
-		std::cout << 
+		std::cout <<
 			"/***************************************************************************\n"
-			"Module Overloading (PoC)\nmore info: https://github.com/hasherezade/module_overloading\n"
-			"Args: <payload_dll> [target_dll]\n"
-			"\t<payload_dll> - the DLL that will be impanted\n"
+			"Module Overloading (PoC)\n";
+#ifdef CLASSIC_HOLLOWING
+		std::cout << "~ Classic Hollowing mode ~\n";
+#endif
+		std::cout << "more info: https://github.com/hasherezade/module_overloading\n";
+		std::cout <<
+			"Args: <payload> [target_dll]\n"
+			"\t<payload> - the PE that will be impanted (DLL or EXE)\n"
 			"\t[target_dll] - the DLL that will be replaced (default: tapi32.dll)\n"
 			"***************************************************************************/\n"
 			<< std::endl;
