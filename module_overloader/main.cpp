@@ -85,6 +85,30 @@ int run_implant(PVOID mapped, DWORD ep_rva, bool is_dll)
 	return exe_main();
 }
 
+PVOID undo_overloading(LPVOID mapped, char *target_dll)
+{
+	size_t payload_size = 0;
+	BYTE* payload = peconv::load_pe_module(target_dll, payload_size, false, false);
+	if (!payload) {
+		return NULL;
+	}
+	// Resolve the payload's Import Table
+	if (!peconv::load_imports(payload)) {
+		peconv::free_pe_buffer(payload);
+		return NULL;
+	}
+	// Relocate the payload into the target base:
+	if (!peconv::relocate_module(payload, payload_size, (ULONGLONG)mapped)) {
+		return NULL;
+	}
+	if (!overwrite_mapping(mapped, payload, payload_size)) {
+		return NULL;
+	}
+	// Free the buffer that was used for the payload's preparation
+	peconv::free_pe_buffer(payload);
+	return mapped;
+}
+
 PVOID module_overloader(BYTE* raw_payload, size_t raw_size, char *target_dll)
 {
 	// Prepare the payload to be implanted:
@@ -118,6 +142,7 @@ PVOID module_overloader(BYTE* raw_payload, size_t raw_size, char *target_dll)
 	std::cout << "[*] Trying to overwrite the mapped DLL with the implant!\n";
 #endif
 	if (!overwrite_mapping(mapped, payload, payload_size)) {
+		undo_overloading(mapped, target_dll);
 		return NULL;
 	}
 	// Free the buffer that was used for the payload's preparation
@@ -188,7 +213,12 @@ int main(int argc, char *argv[])
 	// Run the payload:
 	int ret = run_implant(mapped, ep_rva, is_dll);
 	std::cout << "[+] Implant finished, ret: " << std::dec << ret << "\n";
-
+#ifdef CLASSIC_HOLLOWING
+	// In case if the target was loaded via LoadLibrary, the same DllMain must be called on unload
+	// and if it was not found the app will crash.
+	// So we need to rollback the replacement before the app terminates...
+	undo_overloading(mapped, target_dll);
+#endif
 	system("pause");
 	return 0;
 }
