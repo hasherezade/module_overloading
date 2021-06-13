@@ -34,7 +34,7 @@ before_build:
   - cmake -DCMAKE_INSTALL_PREFIX:PATH=%APPVEYOR_BUILD_FOLDER%/%APPVEYOR_REPO_COMMIT% ..
 
 build_script:
-  - cmake --build .
+  - cmake --build . --config %CONFIGURATION% --target install 
   
 after_build:
   - mkdir %artifactName%
