@@ -7,6 +7,8 @@ https://twitter.com/TheRealWover/status/1193284444687392768?s=20 + my own experi
 
 Using: [libpeconv](https://github.com/hasherezade/libpeconv).
 
+![](/docs/img/module_overload.png)
+
 Characteristics:
 -
 
