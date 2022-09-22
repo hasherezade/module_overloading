@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
 	char target_dll[MAX_PATH] = { 0 };
 	ExpandEnvironmentStringsA("%SystemRoot%\\system32\\tapi32.dll", target_dll, MAX_PATH);
 
-	const char* dll_name = target_dll;
+	char* dll_name = target_dll;
 	if (argc > 2) {
 		dll_name = argv[2];
 	}
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
 		system("pause");
 		return -1;
 	}
-	LPVOID mapped = module_overloader(raw_payload, raw_size, target_dll);
+	LPVOID mapped = module_overloader(raw_payload, raw_size, dll_name);
 	if (!mapped) {
 		std::cerr << "[ERROR] Module Overloading failed!\n";
 		system("pause");
