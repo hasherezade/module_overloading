@@ -61,13 +61,17 @@ PVOID map_dll_image(const char* dll_name)
 		protect)
 		) != STATUS_SUCCESS)
 	{
-		std::wcout << "[ERROR] NtMapViewOfSection failed, status : " << std::hex << status << "\n";
+		is_ok = false;
+		std::wcout << "[ERROR] NtMapViewOfSection failed, status : " << std::hex << status << "\n";	
 	}
 	else {
 #ifdef _DEBUG
 		std::wcout << "Section BaseAddress: " << std::hex << sectionBaseAddress << "\n";
 #endif
 		is_ok = true;
+	}
+	if (!is_ok) {
+		return NULL;
 	}
 	return sectionBaseAddress;
 }
